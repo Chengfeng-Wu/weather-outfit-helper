@@ -7,11 +7,11 @@ Original file is located at
     https://colab.research.google.com/drive/1lMGdncSoJNw5DQH84tJCxzk47tJ19GZE
 """
 
-import streamlit as st
 import requests
 import math
 import concurrent.futures
 from datetime import datetime
+import streamlit as st
 
 # API 設定
 API_HUMAN = "https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/O-A0003-001?Authorization=CWA-4E0D8035-5999-4578-85B2-6E61AD206449&downloadType=WEB&format=JSON"
@@ -77,56 +77,69 @@ def get_weather_and_suggestion(city, town):
     stations, rain_stations = fetch_all_data()
     weather_info = "❌ 找不到氣象資訊"
     outfit = "無法建議穿搭"
+    selected_station = None
+    note=" "
 
     for station in stations:
         if station['GeoInfo']['CountyName'] == city and station['GeoInfo']['TownName'] == town:
-            elem = station.get('WeatherElement', {})
-            temp = elem.get('AirTemperature', "無資料")
-            humd = elem.get('RelativeHumidity', "無資料")
-            wind = elem.get('WindSpeed', "無資料")
-            rain = "無資料"
-            time = format_time(station.get('ObsTime', {}).get('DateTime', ""))
-
-            for r_station in rain_stations:
-                if r_station['GeoInfo']['CountyName'] == city and r_station['GeoInfo']['TownName'] == town:
-                    rain_elem = r_station.get('WeatherElement', {}).get('Now', {})
-                    rain = rain_elem.get('Precipitation', "無資料")
-                    break
-
-            try:
-                temp_f = float(temp)
-                humd_f = float(humd)
-                wind_f = float(wind)
-                vapor_p = calculate_vapor_pressure(temp_f, humd_f)
-                feel_temp = calculate_feels_like(temp_f, vapor_p, wind_f)
-                feel_temp_str = f"{feel_temp:.1f}°C"
-            except:
-                feel_temp_str = "無法計算"
-
-            weather_info = f"""
-                🌡️ 氣溫：{temp}°C（體感：{feel_temp_str}）
-                💧 濕度：{humd}%
-                🌬️ 風速：{wind} m/s
-                ☔ 降雨：{rain} mm
-                🕒 觀測時間：{time}
-            """
-
-            outfit = get_outfit_suggestion(temp, rain, wind)
+            selected_station = station
             break
+
+    if not selected_station:
+        for station in stations:
+            if station['GeoInfo']['CountyName'] == city:
+                selected_station = station
+                note = "⚠️ 找不到指定行政區的測站，顯示最近的測站資料。\n"
+                break
+
+    if selected_station:
+        elem = selected_station.get('WeatherElement', {})
+        temp = elem.get('AirTemperature', "無資料")
+        humd = elem.get('RelativeHumidity', "無資料")
+        wind = elem.get('WindSpeed', "無資料")
+        rain = "無資料"
+        time = format_time(selected_station.get('ObsTime', {}).get('DateTime', ""))
+
+        rain_station = next(
+            (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
+             r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
+        if rain_station:
+            rain_elem = rain_station.get('WeatherElement', {}).get('Now', {})
+            rain = rain_elem.get('Precipitation', "無資料")
+
+        try:
+            temp_f = float(temp)
+            humd_f = float(humd)
+            wind_f = float(wind)
+            vapor_p = calculate_vapor_pressure(temp_f, humd_f)
+            feel_temp = calculate_feels_like(temp_f, vapor_p, wind_f)
+            feel_temp_str = f"{feel_temp:.1f}°C"
+        except:
+            feel_temp_str = "無法計算"
+
+
+        weather_info = note + f"""
+📍 測站地點：{selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
+🌡️ 氣溫：{temp}°C（體感：{feel_temp_str}）
+💧 濕度：{humd}%
+🌬️ 風速：{wind} m/s
+☔ 降雨：{rain} mm
+🕒 觀測時間：{time}
+        """
+
+        outfit = get_outfit_suggestion(temp, rain, wind)
 
     return weather_info, outfit
 
-# --- Streamlit 介面 ---
-st.set_page_config(page_title="穿搭氣象小幫手", page_icon="🧥")
+# --- Streamlit 互動部分 ---
 st.title("穿搭氣象小幫手 👕🌦️")
+city = st.text_input("請輸入縣市（例如：新北市）：").replace("台北", "臺北")
+town = st.text_input("請輸入行政區（例如：三重區）：")
 
-city = st.text_input("請輸入縣市（例如：新北市）").replace("台北", "臺北")
-town = st.text_input("請輸入行政區（例如：三重區）")
-
-if st.button("查詢穿搭建議"):
-    with st.spinner("查詢中..."):
-        weather_info, suggestion = get_weather_and_suggestion(city, town)
-        st.subheader("📍 氣象資訊")
-        st.markdown(weather_info)
-        st.subheader("🧥 穿搭建議")
-        st.success(suggestion)
+if st.button("查詢"):
+    st.write("⏳ 查詢中...")
+    weather_info, suggestion = get_weather_and_suggestion(city, town)
+    st.subheader("📍 氣象資訊")
+    st.write(weather_info)
+    st.subheader("🧥 穿搭建議")
+    st.write(suggestion)
