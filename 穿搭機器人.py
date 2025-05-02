@@ -133,7 +133,7 @@ def get_weather_and_suggestion(city, town):
 
 # --- Streamlit 互動部分 ---
 st.title("穿搭氣象小幫手 👕🌦️")
-city = st.text_input("請輸入縣市（例如：新北市）：").replace("台北", "臺北")
+city = st.text_input("請輸入縣市（例如：新北市）：").replace("台", "臺")
 town = st.text_input("請輸入行政區（例如：三重區）：")
 
 if st.button("查詢"):
