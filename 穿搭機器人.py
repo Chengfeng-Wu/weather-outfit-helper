@@ -93,26 +93,30 @@ def get_weather_and_suggestion(city, town):
                 break
 
     if selected_station:
-        elem = selected_station.get('WeatherElement', {})
-        temp = elem.get('AirTemperature', "無資料")
-        humd = elem.get('RelativeHumidity', "無資料")
-        wind = elem.get('WindSpeed', "無資料")
-        rain = "無資料"
-        time = format_time(selected_station.get('ObsTime', {}).get('DateTime', ""))
+    elem = selected_station.get('WeatherElement', {})
+    temp = elem.get('AirTemperature', "無資料")
+    humd = elem.get('RelativeHumidity', "無資料")
+    wind = elem.get('WindSpeed', "無資料")
+    rain = "無資料"
+    rain_note = ""
+    time = format_time(selected_station.get('ObsTime', {}).get('DateTime', ""))
 
-        rain_station = next(
-            (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
-             r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
+    # 嘗試取得雨量資料
+    rain_station = next(
+        (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
+         r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
+
         if rain_station:
             rain_elem = rain_station.get('RainfallElement', {})
-
-            # 優先抓 Past1hr，其次 Past10Min，再其次 Now
-            rain = (
-                rain_elem.get('Past1hr', {}).get('Precipitation') or
-                rain_elem.get('Past10Min', {}).get('Precipitation') or
-                rain_elem.get('Now', {}).get('Precipitation') or
-                "無資料"
-            )
+            for key in ['Past1hr', 'Past10Min', 'Now']:
+                val = rain_elem.get(key, {}).get('Precipitation')
+                if val not in [None, "", "-99"]:
+                    rain = val
+                    break
+            if rain == "無資料":
+                rain_note = "⚠️ 此區有測站但雨量資料異常或為空值。\n"
+        else:
+            rain_note = "⚠️ 此區無雨量測站，顯示為空值。\n"
 
         try:
             temp_f = float(temp)
@@ -124,17 +128,16 @@ def get_weather_and_suggestion(city, town):
         except:
             feel_temp_str = "無法計算"
 
-
-        weather_info = note + f"""
+        weather_info = note + rain_note + f"""
 📍 測站地點：{selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
 🌡️ 氣溫：{temp}°C（體感：{feel_temp_str}）
 💧 濕度：{humd}%
 🌬️ 風速：{wind} m/s
 ☔ 降雨：{rain} mm
 🕒 觀測時間：{time}
-        """
+    """
+    outfit = get_outfit_suggestion(temp, rain, wind)
 
-        outfit = get_outfit_suggestion(temp, rain, wind)
 
     return weather_info, outfit
 
