@@ -143,3 +143,14 @@ if st.button("查詢"):
     st.write(weather_info)
     st.subheader("🧥 穿搭建議")
     st.write(suggestion)
+st.markdown("----------------")
+st.markdown(
+    """
+    <div style='font-size: 0.8em; text-align: center; color: gray;'>
+        © 2025 成淵高中學生製作 |
+        資料來源：<a href='https://opendata.cwa.gov.tw' target='_blank'>中央氣象署開放資料</a> |
+        <a href='https://forms.gle/NRnPgNb7sDUnPTc4A' target='_blank'>意見回饋表單</a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
