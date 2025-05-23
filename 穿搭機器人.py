@@ -104,8 +104,15 @@ def get_weather_and_suggestion(city, town):
             (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
              r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
         if rain_station:
-            rain_elem = rain_station.get('WeatherElement', {}).get('Now', {})
-            rain = rain_elem.get('Precipitation', "無資料")
+            rain_elem = rain_station.get('RainfallElement', {})
+
+            # 優先抓 Past1hr，其次 Past10Min，再其次 Now
+            rain = (
+                rain_elem.get('Past1hr', {}).get('Precipitation') or
+                rain_elem.get('Past10Min', {}).get('Precipitation') or
+                rain_elem.get('Now', {}).get('Precipitation') or
+                "無資料"
+            )
 
         try:
             temp_f = float(temp)
