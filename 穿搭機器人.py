@@ -93,18 +93,18 @@ def get_weather_and_suggestion(city, town):
                 break
 
     if selected_station:
-    elem = selected_station.get('WeatherElement', {})
-    temp = elem.get('AirTemperature', "無資料")
-    humd = elem.get('RelativeHumidity', "無資料")
-    wind = elem.get('WindSpeed', "無資料")
-    rain = "無資料"
-    rain_note = ""
-    time = format_time(selected_station.get('ObsTime', {}).get('DateTime', ""))
+        elem = selected_station.get('WeatherElement', {})
+        temp = elem.get('AirTemperature', "無資料")
+        humd = elem.get('RelativeHumidity', "無資料")
+        wind = elem.get('WindSpeed', "無資料")
+        rain = "無資料"
+        rain_note = ""
+        time = format_time(selected_station.get('ObsTime', {}).get('DateTime', ""))
 
-    # 嘗試取得雨量資料
-    rain_station = next(
-        (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
-         r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
+        # 嘗試取得雨量資料
+        rain_station = next(
+            (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
+            r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
 
         if rain_station:
             rain_elem = rain_station.get('RainfallElement', {})
