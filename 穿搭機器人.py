@@ -147,9 +147,10 @@ st.markdown("----------------")
 st.markdown(
     """
     <div style='font-size: 0.8em; text-align: center; color: gray;'>
-         2025 成淵高中學生 吳承峰,邱奕淞,張銘哲(按姓氏排列)製作 |
+         2025 成淵高中學生 吳承峰,邱奕淞,張銘哲 製作(按姓氏排列) |
         資料來源：<a href='https://opendata.cwa.gov.tw' target='_blank'>中央氣象署開放資料</a> |
         <a href='https://forms.gle/NRnPgNb7sDUnPTc4A' target='_blank'>意見回饋表單</a>
+        如資訊有誤，可能為氣象署資料更新延遲或測站異常所致，敬請見諒 🙏
     </div>
     """,
     unsafe_allow_html=True
