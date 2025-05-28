@@ -67,7 +67,6 @@ def get_outfit_suggestion(temp, rain, wind):
 
     if rain >= 1:
         suggestion += "，記得帶雨具 ☔"
-
     if wind >= 6:
         suggestion += "，風大注意保暖 🌬️"
 
@@ -101,7 +100,6 @@ def get_weather_and_suggestion(city, town):
         rain_note = ""
         time = format_time(selected_station.get('ObsTime', {}).get('DateTime', ""))
 
-        # 嘗試取得雨量資料
         rain_station = next(
             (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
              r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
@@ -118,7 +116,6 @@ def get_weather_and_suggestion(city, town):
         else:
             rain_note = "⚠️ 此區無雨量測站，顯示為空值。\n"
 
-        # 嘗試計算體感溫度
         try:
             temp_f = float(temp)
             humd_f = float(humd)
@@ -129,7 +126,6 @@ def get_weather_and_suggestion(city, town):
         except:
             feel_temp_str = "無法計算"
 
-        # 經緯度處理（取 WGS84）
         latitude = longitude = "未知"
         for coord in selected_station['GeoInfo'].get('Coordinates', []):
             if coord['CoordinateName'] == "WGS84":
@@ -137,7 +133,6 @@ def get_weather_and_suggestion(city, town):
                 longitude = coord.get('StationLongitude', "未知")
                 break
 
-        # 組合資訊
         weather_text = f"""
 **📍 測站地點：** {selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
 **🧭 測站座標（WGS84）：** {latitude}, {longitude}
@@ -150,6 +145,7 @@ def get_weather_and_suggestion(city, town):
 **🕒 觀測時間：** {time}
 """.strip()
 
+        weather_info = note + rain_note + weather_text
         outfit = get_outfit_suggestion(temp, rain, wind)
 
     return weather_info, outfit
@@ -166,6 +162,7 @@ if st.button("查詢"):
     st.write(weather_info)
     st.subheader("🧥 穿搭建議")
     st.write(suggestion)
+
 st.markdown("----------------")
 st.markdown(
     """
