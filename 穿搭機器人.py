@@ -138,16 +138,17 @@ def get_weather_and_suggestion(city, town):
                 break
 
         # 組合資訊
-        weather_info = note + rain_note + f"""
-📍 測站地點：{selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
-🧭 測站座標（WGS84）：{latitude}, {longitude}
-🌍 [在地圖上查看](https://www.google.com/maps/search/?api=1&query={latitude},{longitude})
-🌡️ 氣溫：{temp}°C（體感：{feel_temp_str}）
-💧 濕度：{humd}%
-🌬️ 風速：{wind} m/s
-☔ 降雨：{rain} mm
-🕒 觀測時間：{time}
-        """.strip()
+        weather_text = f"""
+**📍 測站地點：** {selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
+**🧭 測站座標（WGS84）：** {latitude}, {longitude}
+[🌍 在地圖上查看](https://www.google.com/maps/search/?api=1&query={latitude},{longitude})
+
+**🌡️ 氣溫：** {temp}°C（體感：{feel_temp_str}）
+**💧 濕度：** {humd}%
+**🌬️ 風速：** {wind} m/s
+**☔ 降雨：** {rain} mm
+**🕒 觀測時間：** {time}
+""".strip()
 
         outfit = get_outfit_suggestion(temp, rain, wind)
 
