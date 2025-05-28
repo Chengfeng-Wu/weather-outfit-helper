@@ -147,6 +147,7 @@ def get_weather_and_suggestion(city, town):
 **💧 濕度：** {humd}%
 **🌬️ 風速：** {wind} m/s
 **☔ 降雨：** {rain} mm
+
 **🕒 觀測時間：** {time}
 """.strip()
 
