@@ -75,14 +75,20 @@ def get_outfit_suggestion(temp, rain, wind):
 
     return suggestion
 
-def get_station_list():
+def get_station_dict():
     stations = get_weather_data(API_HUMAN)
-    station_set = set()
+    station_dict = {}
     for s in stations:
         city = s['GeoInfo']['CountyName']
         town = s['GeoInfo']['TownName']
-        station_set.add(f"{city} {town}")
-    return sorted(station_set)
+        if city not in station_dict:
+            station_dict[city] = []
+        if town not in station_dict[city]:
+            station_dict[city].append(town)
+    # 排序鄉鎮清單
+    for city in station_dict:
+        station_dict[city].sort()
+    return station_dict
 
 def get_weather_and_suggestion(city, town):
     stations, rain_stations = fetch_all_data()
@@ -165,7 +171,8 @@ def get_weather_and_suggestion(city, town):
 # --- Streamlit 主程式 ---
 st.title("穿搭氣象小幫手 👕🌦️")
 
-station_list = get_station_list()
+station_dict = get_station_dict()
+city_list = sorted(station_dict.keys())
 
 st.markdown("## 方式一：文字輸入查詢")
 city_input = st.text_input("請輸入縣市（例如：新北市）：").replace("台", "臺")
@@ -173,13 +180,21 @@ town_input = st.text_input("請輸入行政區（例如：三重區）：")
 
 st.markdown("---")
 st.markdown("## 方式二：下拉選單選擇測站")
-selected_area = st.selectbox("請選擇測站所在的縣市與鄉鎮", [""] + station_list)
+
+selected_city = st.selectbox("請選擇縣市", [""] + city_list)
+
+if selected_city:
+    town_list = station_dict.get(selected_city, [])
+else:
+    town_list = []
+
+selected_town = st.selectbox("請選擇鄉鎮市區", [""] + town_list)
 
 if st.button("查詢"):
     if city_input and town_input:
         city, town = city_input, town_input
-    elif selected_area:
-        city, town = selected_area.split()
+    elif selected_city and selected_town:
+        city, town = selected_city, selected_town
     else:
         st.error("請輸入縣市與行政區，或從下拉選單選擇測站")
         st.stop()
@@ -187,7 +202,7 @@ if st.button("查詢"):
     weather_info, suggestion = get_weather_and_suggestion(city, town)
 
     st.subheader("📍 氣象資訊")
-    st.markdown(weather_info)  # 用 markdown 顯示可支援連結與換行
+    st.markdown(weather_info)
     st.subheader("🧥 穿搭建議")
     st.write(suggestion)
 
