@@ -13,10 +13,12 @@ import concurrent.futures
 from datetime import datetime
 import streamlit as st
 
-# API 設定
-API_HUMAN = "https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/O-A0003-001?Authorization=CWA-4E0D8035-5999-4578-85B2-6E61AD206449&downloadType=WEB&format=JSON"
-API_AUTO = "https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/O-A0001-001?Authorization=CWA-4E0D8035-5999-4578-85B2-6E61AD206449&downloadType=WEB&format=JSON"
-API_RAIN = "https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/O-A0002-001?Authorization=CWA-4E0D8035-5999-4578-85B2-6E61AD206449&downloadType=WEB&format=JSON"
+# API 授權碼（建議改成自己的）
+AUTHORIZATION_CODE = "CWA-4E0D8035-5999-4578-85B2-6E61AD206449"
+
+API_HUMAN = f"https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/O-A0003-001?Authorization={AUTHORIZATION_CODE}&downloadType=WEB&format=JSON"
+API_AUTO = f"https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/O-A0001-001?Authorization={AUTHORIZATION_CODE}&downloadType=WEB&format=JSON"
+API_RAIN = f"https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/O-A0002-001?Authorization={AUTHORIZATION_CODE}&downloadType=WEB&format=JSON"
 
 def get_weather_data(url):
     try:
@@ -73,6 +75,15 @@ def get_outfit_suggestion(temp, rain, wind):
 
     return suggestion
 
+def get_station_list():
+    stations = get_weather_data(API_HUMAN)
+    station_set = set()
+    for s in stations:
+        city = s['GeoInfo']['CountyName']
+        town = s['GeoInfo']['TownName']
+        station_set.add(f"{city} {town}")
+    return sorted(station_set)
+
 def get_weather_and_suggestion(city, town):
     stations, rain_stations = fetch_all_data()
     weather_info = "❌ 找不到氣象資訊"
@@ -89,7 +100,7 @@ def get_weather_and_suggestion(city, town):
         for station in stations:
             if station['GeoInfo']['CountyName'] == city:
                 selected_station = station
-                note = "**⚠️ 找不到指定行政區的測站，顯示最近的測站資料。**\n\n"
+                note = "⚠️ 找不到指定行政區的測站，顯示最近的測站資料。\n"
                 break
 
     if selected_station:
@@ -101,7 +112,6 @@ def get_weather_and_suggestion(city, town):
         rain_note = ""
         time = format_time(selected_station.get('ObsTime', {}).get('DateTime', ""))
 
-        # 嘗試取得雨量資料
         rain_station = next(
             (r for r in rain_stations if r['GeoInfo']['CountyName'] == selected_station['GeoInfo']['CountyName'] and
              r['GeoInfo']['TownName'] == selected_station['GeoInfo']['TownName']), None)
@@ -118,7 +128,6 @@ def get_weather_and_suggestion(city, town):
         else:
             rain_note = "⚠️ 此區無雨量測站，顯示為空值。\n"
 
-        # 嘗試計算體感溫度
         try:
             temp_f = float(temp)
             humd_f = float(humd)
@@ -129,7 +138,6 @@ def get_weather_and_suggestion(city, town):
         except:
             feel_temp_str = "無法計算"
 
-        # 經緯度處理（取 WGS84）
         latitude = longitude = "未知"
         for coord in selected_station['GeoInfo'].get('Coordinates', []):
             if coord['CoordinateName'] == "WGS84":
@@ -137,9 +145,8 @@ def get_weather_and_suggestion(city, town):
                 longitude = coord.get('StationLongitude', "未知")
                 break
 
-        # 組合資訊
-        weather_info = f"""
-{note}**📍 測站地點：** {selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
+        weather_text = f"""{note}
+**📍 測站地點：** {selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
 **🧭 測站座標（WGS84）：** {latitude}, {longitude}
 [🌍 在地圖上查看](https://www.google.com/maps/search/?api=1&query={latitude},{longitude})
 
@@ -147,24 +154,40 @@ def get_weather_and_suggestion(city, town):
 **💧 濕度：** {humd}%
 **🌬️ 風速：** {wind} m/s
 **☔ 降雨：** {rain} mm
-
 **🕒 觀測時間：** {time}
 """.strip()
 
+        weather_info = weather_text
         outfit = get_outfit_suggestion(temp, rain, wind)
 
     return weather_info, outfit
 
-# --- Streamlit 互動部分 ---
+# --- Streamlit 主程式 ---
 st.title("穿搭氣象小幫手 👕🌦️")
-city = st.text_input("請輸入縣市（例如：新北市）：").replace("台", "臺")
-town = st.text_input("請輸入行政區（例如：三重區）：")
+
+station_list = get_station_list()
+
+st.markdown("## 方式一：文字輸入查詢")
+city_input = st.text_input("請輸入縣市（例如：新北市）：").replace("台", "臺")
+town_input = st.text_input("請輸入行政區（例如：三重區）：")
+
+st.markdown("---")
+st.markdown("## 方式二：下拉選單選擇測站")
+selected_area = st.selectbox("請選擇測站所在的縣市與鄉鎮", [""] + station_list)
 
 if st.button("查詢"):
-    st.write("⏳ 查詢中...")
+    if city_input and town_input:
+        city, town = city_input, town_input
+    elif selected_area:
+        city, town = selected_area.split()
+    else:
+        st.error("請輸入縣市與行政區，或從下拉選單選擇測站")
+        st.stop()
+
     weather_info, suggestion = get_weather_and_suggestion(city, town)
+
     st.subheader("📍 氣象資訊")
-    st.markdown(weather_info)  # 用 markdown 支援連結跟格式
+    st.markdown(weather_info)  # 用 markdown 顯示可支援連結與換行
     st.subheader("🧥 穿搭建議")
     st.write(suggestion)
 
