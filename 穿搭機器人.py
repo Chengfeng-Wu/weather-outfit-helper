@@ -141,7 +141,7 @@ def get_weather_and_suggestion(city, town):
         weather_info = note + rain_note + f"""
 📍 測站地點：{selected_station['GeoInfo']['CountyName']} {selected_station['GeoInfo']['TownName']}
 🧭 測站座標（WGS84）：{latitude}, {longitude}
-🌍 [在地圖上查看](https://www.google.com/maps?q={latitude},{longitude})
+🌍 [在地圖上查看](https://www.google.com/maps/search/?api=1&query={latitude},{longitude})
 🌡️ 氣溫：{temp}°C（體感：{feel_temp_str}）
 💧 濕度：{humd}%
 🌬️ 風速：{wind} m/s
